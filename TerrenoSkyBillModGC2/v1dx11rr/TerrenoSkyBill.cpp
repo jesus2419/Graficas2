@@ -77,25 +77,27 @@ int WINAPI WinMain(HINSTANCE hInstance,
     dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
 
     // Change the display settings to full screen.
-    ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN);
+    
+    //ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN);
 
     // Set the position of the window to the top left corner.
     posX = posY = 0;
 
     //RECT wr = {0, 0, SCREEN_X, SCREEN_Y};
     //AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
-    hWnd = CreateWindowEx(WS_EX_APPWINDOW,
-                          L"DXRR_E1",
-                          L"PLANTILLA PROYECTO",
-                          WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP,
+    hWnd = CreateWindowEx(
+        WS_EX_APPWINDOW,
+        L"DXRR_E1",
+        L"PLANTILLA PROYECTO",
+        WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_OVERLAPPEDWINDOW, // Change this line
         posX,
         posY,
         SCREEN_X,
         SCREEN_Y,
-                          NULL,
-                          NULL,
-                          hInstance,
-                          NULL);
+        NULL,
+        NULL,
+        hInstance,
+        NULL);
 
     ShowWindow(hWnd, nCmdShow);
 	dxrr = new DXRR(hWnd, 800, 600);
@@ -208,27 +210,30 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
             if (gamePad->IsConnected())
             {
+                XINPUT_STATE state = gamePad->GetState();
 
+                // Handle gamepad input
+                float gradosX = (float)state.Gamepad.sThumbRX / 32767.0;
+                float gradosY = (float)state.Gamepad.sThumbRY / 32767.0;
 
-                float grados = (float)gamePad->GetState().Gamepad.sThumbRX / 32767.0;
-
-                if (grados > 0.19 || grados < -0.19) dxrr->izqder = grados / 15;
-
-                grados = (float)gamePad->GetState().Gamepad.sThumbRY / 32767.0;
-
-                if (grados > 0.19 || grados < -0.19)dxrr->arriaba = grados / 15;
-
-
-                float velocidad = (float)gamePad->GetState().Gamepad.sThumbLY / 32767.0;
-                if (velocidad > 0.19 || velocidad < -0.19) {
-                    if (gamePad->GetState().Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
-                        velocidad *= 14.5;
-                    else if (gamePad->GetState().Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) velocidad /= 3;
-                    else velocidad *= 2.5;
-                    if (velocidad > 0.19) dxrr->vel = velocidad;
-                    else if (velocidad < -0.19) dxrr->vel = velocidad;
+                if (fabs(gradosX) > 0.19 || fabs(gradosY) > 0.19)
+                {
+                    dxrr->izqder = gradosX / 15;
+                    dxrr->arriaba = gradosY / 15;
                 }
 
+                float velocidad = (float)state.Gamepad.sThumbLY / 32767.0;
+                if (fabs(velocidad) > 0.19)
+                {
+                    if (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
+                        velocidad *= 14.5;
+                    else if (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER)
+                        velocidad /= 3;
+                    else
+                        velocidad *= 2.5;
+
+                    dxrr->vel = velocidad;
+                }
             }
 
         }break;
